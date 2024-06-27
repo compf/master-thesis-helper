@@ -29,7 +29,10 @@ namespace MasterThesisHelper
             };
             String text=JsonSerializer.Serialize(result,options);
             System.IO.File.WriteAllText("E:\\output.json", text);
+            List<LatexBlock> items = new();
+            items.Add(result);
             InitializeComponent();
+            tvProject.ItemsSource = result;
         }
     }
 }

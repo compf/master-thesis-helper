@@ -7,12 +7,13 @@ using System.Xml.Serialization;
 using System.IO;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Collections;
 namespace MasterThesisHelper.parser
 {
     [JsonDerivedType(typeof(LatexTextBlock))]
     [JsonDerivedType(typeof(LatexSectionBlock))]
 
-    public class LatexBlock
+    public class LatexBlock :IEnumerable<LatexBlock>
     {
         public string Section { get; set; }
 
@@ -20,7 +21,14 @@ namespace MasterThesisHelper.parser
         public string FilePath { get; set; }
 
 
-
+        public IEnumerator<LatexBlock> GetEnumerator()
+        {
+            return Children.GetEnumerator();
+        }
+         IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Children.GetEnumerator();
+        }
         public string GetLevelDownSection()
         {
             return Section + ".1";
@@ -58,7 +66,8 @@ namespace MasterThesisHelper.parser
         }
         public override string ToString()
         {
-            return "";
+            string all = String.Join('\n', Children);
+            return all.Substring(0, Math.Min(20, all.Length));
         }
 
     }
@@ -104,6 +113,10 @@ namespace MasterThesisHelper.parser
         }
         private void HandleNonEmptyBuffer(string buffer, LatexBlock parent ,int line)
         {
+            if (  buffer.Trim().StartsWith("\\"))
+            {
+                return;
+            }
             LatexTextBlock latexTextBlock = new LatexTextBlock();
             latexTextBlock.Text = buffer;
             latexTextBlock.FilePath = parent.FilePath;

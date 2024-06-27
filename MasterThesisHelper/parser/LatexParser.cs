@@ -79,11 +79,11 @@ namespace MasterThesisHelper.parser
             block.Position.Add(1);
             block.Level = -1;
             int j = 0;
-            var result = Parse( block, null, 0, ref j);
+            var result = Parse( block, null, ref j);
             return result;
 
         }
-        private LatexBlock Parse( LatexBlock parent, string[] lines, int start, ref int i)
+        private LatexBlock Parse( LatexBlock parent, string[] lines, ref int i)
         {
             Trace.WriteLine(parent);
             string buffer = "";
@@ -91,7 +91,7 @@ namespace MasterThesisHelper.parser
             {
                 lines = System.IO.File.ReadAllLines(parent.FilePath);
             }
-            for( i=start;i<lines.Length;i++)
+            for( ;i<lines.Length;i++)
             {
                 string line = lines[i];
                 int level = 0;
@@ -123,26 +123,24 @@ namespace MasterThesisHelper.parser
                         block.Position.Add(1);
                         block.Level = parent.Level + 1;
                         parent.AddChild(block);
-                        Parse( block, lines, i+1, ref i);
+                        i++;
+                        Parse( block, lines, ref i);
                     }
-                    else if(level == parent.Level)
-                    {
-                        block.Position[level]++;
-                        block.Level = parent.Level;
-                    }
+
                     else
                     {
                         block.Position[level]++;
                         for(int j=level +1;j<block.Position.Count;j++)
                         {
-                            block.Position[j] = 0;
+                            block.Position[j] = 1;
                         }
-                        while(parent.Level !=level)
+                        while(parent.Level+1 !=level)
                         {
                             parent=parent.Parent;
                         }
-                        block.Level = parent.Level;
+                        block.Level = parent.Level+1;
                         parent.AddChild(block);
+                        parent = block;
                     }
                 }
                 else if(line.Contains("\\input{"))
@@ -157,13 +155,24 @@ namespace MasterThesisHelper.parser
                     block.Level = parent.Level;
                     parent.AddChild(block);
                     int j = 0;
-                    Parse(block, null, 0, ref j);
+                    Parse(block, null,  ref j);
                     
                 }
                 else
                 {
                     buffer += line + "\n";
                 }
+            }
+            if (!String.IsNullOrWhiteSpace(buffer))
+            {
+                LatexTextBlock latexTextBlock = new LatexTextBlock();
+                latexTextBlock.Text = buffer;
+                latexTextBlock.FilePath = parent.FilePath;
+                latexTextBlock.Line = i;
+                latexTextBlock.Position = new List<int>(parent.Position);
+                parent.AddChild(latexTextBlock);
+                Trace.WriteLine(latexTextBlock);
+                buffer = "";
             }
             return parent;
 

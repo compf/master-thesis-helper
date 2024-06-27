@@ -33,6 +33,12 @@ namespace MasterThesisHelper
             items.Add(result);
             InitializeComponent();
             tvProject.ItemsSource = result;
+            tvProject.SelectedItemChanged += (sender, e) =>
+            {
+                var val = e.NewValue as LatexBlock;
+                textEditor.Load(val.FilePath);
+                textEditor.ScrollTo(val.Line,0);
+            };
         }
     }
 }

@@ -14,14 +14,31 @@ namespace MasterThesisHelper.parser
 
     public class LatexBlock
     {
+        public string Section { get; set; }
+       
         public List<LatexBlock> Children { get; set; } = new();
         public string FilePath { get; set; }
-        public List<int> Position { get; set; } = new();
 
+
+
+       public string GetLevelDownSection()
+        {
+            return Section + ".1";
+        }
+        public string IncrementSectionAt(int at)
+        {
+            int[] splitted = Section.Split(".").Select((b) => int.Parse(b)).ToArray();
+            splitted[at]++;
+            for(int i=at+1;i<splitted.Length;i++)
+            {
+                splitted[i] = 1;
+            }
+            return String.Join(".", splitted);
+        }
         public int Level { get; set; }
         public int Line { get; set; }
 
-        [System.Text.Json.Serialization.JsonIgnore]
+        [JsonIgnore]
         public LatexBlock Parent { get; set; }
         public void AddChild(LatexBlock child)
         {
@@ -48,6 +65,7 @@ namespace MasterThesisHelper.parser
 
     public class LatexTextBlock : LatexBlock
     {
+        [JsonPropertyOrder(0)]
         public string Text { get; set; }
         public override string ToString()
         {
@@ -56,6 +74,7 @@ namespace MasterThesisHelper.parser
     }
     public class LatexSectionBlock : LatexBlock
     {
+        [JsonPropertyOrder(0)]
         public string Title { get; set; }
         public override string ToString()
         {
@@ -76,7 +95,7 @@ namespace MasterThesisHelper.parser
             LatexBlock block = new LatexBlock();
             block.FilePath = mainPath;
             block.Line = 0;
-            block.Position.Add(1);
+            block.Section = "1";
             block.Level = -1;
             int j = 0;
             var result = Parse( block, null, ref j);
@@ -107,7 +126,7 @@ namespace MasterThesisHelper.parser
                         latexTextBlock.Text = buffer;
                         latexTextBlock.FilePath = parent.FilePath;
                         latexTextBlock.Line = i;
-                        latexTextBlock.Position = new List<int>(parent.Position);
+                        latexTextBlock.Section =(parent.Section);
                         parent.AddChild(latexTextBlock);
                         Trace.WriteLine(latexTextBlock);
                         buffer = "";
@@ -116,11 +135,11 @@ namespace MasterThesisHelper.parser
                     block.Title = GetBetweenCurlyBrackets(line);
                     block.FilePath = parent.FilePath;
                     block.Line = i;
-                    block.Position = new List<int>(parent.Position);
+                    block.Section =(parent.Section);
 
                     if (level> parent.Level)
                     {
-                        block.Position.Add(1);
+                        block.Section = parent.GetLevelDownSection();
                         block.Level = parent.Level + 1;
                         parent.AddChild(block);
                         i++;
@@ -129,11 +148,8 @@ namespace MasterThesisHelper.parser
 
                     else
                     {
-                        block.Position[level]++;
-                        for(int j=level +1;j<block.Position.Count;j++)
-                        {
-                            block.Position[j] = 1;
-                        }
+                        block.Section = parent.IncrementSectionAt(level);
+                        
                         while(parent.Level+1 !=level)
                         {
                             parent=parent.Parent;
@@ -150,7 +166,7 @@ namespace MasterThesisHelper.parser
                     LatexBlock block = new LatexBlock();
                     block.FilePath = path;
                    
-                    block.Position = new List<int>(parent.Position);
+                    block.Section =(parent.Section);
                     block.Line = i;
                     block.Level = parent.Level;
                     parent.AddChild(block);
@@ -169,7 +185,7 @@ namespace MasterThesisHelper.parser
                 latexTextBlock.Text = buffer;
                 latexTextBlock.FilePath = parent.FilePath;
                 latexTextBlock.Line = i;
-                latexTextBlock.Position = new List<int>(parent.Position);
+                latexTextBlock.Section =(parent.Section);
                 parent.AddChild(latexTextBlock);
                 Trace.WriteLine(latexTextBlock);
                 buffer = "";

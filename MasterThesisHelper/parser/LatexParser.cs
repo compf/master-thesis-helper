@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using  System.IO;
+using System.IO;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 namespace MasterThesisHelper.parser
@@ -15,13 +15,13 @@ namespace MasterThesisHelper.parser
     public class LatexBlock
     {
         public string Section { get; set; }
-       
+
         public List<LatexBlock> Children { get; set; } = new();
         public string FilePath { get; set; }
 
 
 
-       public string GetLevelDownSection()
+        public string GetLevelDownSection()
         {
             return Section + ".1";
         }
@@ -29,7 +29,7 @@ namespace MasterThesisHelper.parser
         {
             int[] splitted = Section.Split(".").Select((b) => int.Parse(b)).ToArray();
             splitted[at]++;
-            for(int i=at+1;i<splitted.Length;i++)
+            for (int i = at + 1; i < splitted.Length; i++)
             {
                 splitted[i] = 1;
             }
@@ -47,7 +47,7 @@ namespace MasterThesisHelper.parser
         }
         protected string GetPadding()
         {
-            if(Level<0)
+            if (Level < 0)
             {
                 return "";
             }
@@ -69,7 +69,7 @@ namespace MasterThesisHelper.parser
         public string Text { get; set; }
         public override string ToString()
         {
-            return GetPadding() + Text.Substring(0,Math.Min(20,Text.Length));
+            return GetPadding() + Text.Substring(0, Math.Min(20, Text.Length));
         }
     }
     public class LatexSectionBlock : LatexBlock
@@ -98,35 +98,43 @@ namespace MasterThesisHelper.parser
             block.Section = "1";
             block.Level = -1;
             int j = 0;
-            var result = Parse( block, null, ref j);
+            var result = Parse(block, null, ref j);
             return result;
 
         }
-        private LatexBlock Parse( LatexBlock parent, string[] lines, ref int i)
+        private LatexBlock Parse(LatexBlock parent, string[] lines, ref int i)
         {
             Trace.WriteLine(parent);
             string buffer = "";
-            if(lines==null)
+            if (lines == null)
             {
                 lines = System.IO.File.ReadAllLines(parent.FilePath);
             }
-            for( ;i<lines.Length;i++)
+            for (; i < lines.Length; i++)
             {
                 string line = lines[i];
                 int level = 0;
-                if(line.TrimStart().StartsWith("%"))
+                if (line.TrimStart().StartsWith("%"))
                 {
                     continue;
                 }
-                else if(CheckIsSection(line,ref level))
+                else if (line.Contains("\\begin{comment}"))
                 {
-                    if(!String.IsNullOrWhiteSpace(buffer))
+                    while (!line.Contains("\\end{comment}"))
+                    {
+                        i++;
+                        line = lines[i];
+                    }
+                }
+                else if (CheckIsSection(line, ref level))
+                {
+                    if (!String.IsNullOrWhiteSpace(buffer))
                     {
                         LatexTextBlock latexTextBlock = new LatexTextBlock();
                         latexTextBlock.Text = buffer;
                         latexTextBlock.FilePath = parent.FilePath;
                         latexTextBlock.Line = i;
-                        latexTextBlock.Section =(parent.Section);
+                        latexTextBlock.Section = (parent.Section);
                         parent.AddChild(latexTextBlock);
                         Trace.WriteLine(latexTextBlock);
                         buffer = "";
@@ -135,44 +143,44 @@ namespace MasterThesisHelper.parser
                     block.Title = GetBetweenCurlyBrackets(line);
                     block.FilePath = parent.FilePath;
                     block.Line = i;
-                    block.Section =(parent.Section);
+                    block.Section = (parent.Section);
 
-                    if (level> parent.Level)
+                    if (level > parent.Level)
                     {
                         block.Section = parent.GetLevelDownSection();
                         block.Level = parent.Level + 1;
                         parent.AddChild(block);
                         i++;
-                        Parse( block, lines, ref i);
+                        Parse(block, lines, ref i);
                     }
 
                     else
                     {
                         block.Section = parent.IncrementSectionAt(level);
-                        
-                        while(parent.Level+1 !=level)
+
+                        while (parent.Level + 1 != level)
                         {
-                            parent=parent.Parent;
+                            parent = parent.Parent;
                         }
-                        block.Level = parent.Level+1;
+                        block.Level = parent.Level + 1;
                         parent.AddChild(block);
                         parent = block;
                     }
                 }
-                else if(line.Contains("\\input{"))
+                else if (line.Contains("\\input{"))
                 {
                     string path = GetBetweenCurlyBrackets(line);
-                    path = System.IO.Path.Combine(Path.GetDirectoryName(mainPath), path)+".tex";
+                    path = System.IO.Path.Combine(Path.GetDirectoryName(mainPath), path) + ".tex";
                     LatexBlock block = new LatexBlock();
                     block.FilePath = path;
-                   
-                    block.Section =(parent.Section);
+
+                    block.Section = (parent.Section);
                     block.Line = i;
                     block.Level = parent.Level;
                     parent.AddChild(block);
                     int j = 0;
-                    Parse(block, null,  ref j);
-                    
+                    Parse(block, null, ref j);
+
                 }
                 else
                 {
@@ -185,7 +193,7 @@ namespace MasterThesisHelper.parser
                 latexTextBlock.Text = buffer;
                 latexTextBlock.FilePath = parent.FilePath;
                 latexTextBlock.Line = i;
-                latexTextBlock.Section =(parent.Section);
+                latexTextBlock.Section = (parent.Section);
                 parent.AddChild(latexTextBlock);
                 Trace.WriteLine(latexTextBlock);
                 buffer = "";
@@ -196,14 +204,14 @@ namespace MasterThesisHelper.parser
         private string GetBetweenCurlyBrackets(string line)
         {
             int open = line.IndexOf("{");
-            int length=  line.IndexOf("}") - open;
-            return line.Substring(open+1, length-1);
+            int length = line.IndexOf("}") - open;
+            return line.Substring(open + 1, length - 1);
         }
         private bool CheckIsSection(string line, ref int level)
         {
             if (line.Contains("\\chapter{"))
             {
-                level =0;
+                level = 0;
             }
             else if (line.Contains("\\section{"))
             {

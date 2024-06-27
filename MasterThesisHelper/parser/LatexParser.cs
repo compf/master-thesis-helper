@@ -102,9 +102,17 @@ namespace MasterThesisHelper.parser
             return result;
 
         }
+        private void HandleNonEmptyBuffer(string buffer, LatexBlock parent ,int line)
+        {
+            LatexTextBlock latexTextBlock = new LatexTextBlock();
+            latexTextBlock.Text = buffer;
+            latexTextBlock.FilePath = parent.FilePath;
+            latexTextBlock.Line = line;
+            latexTextBlock.Section = (parent.Section);
+            parent.AddChild(latexTextBlock);
+        }
         private LatexBlock Parse(LatexBlock parent, string[] lines, ref int i)
         {
-            Trace.WriteLine(parent);
             string buffer = "";
             if (lines == null)
             {
@@ -118,6 +126,14 @@ namespace MasterThesisHelper.parser
                 {
                     continue;
                 }
+                else if(line =="")
+                {
+                    if (!String.IsNullOrWhiteSpace(buffer))
+                    {
+                        HandleNonEmptyBuffer(buffer, parent, i);
+                        buffer = "";
+                    }
+                }
                 else if (line.Contains("\\begin{comment}"))
                 {
                     while (!line.Contains("\\end{comment}"))
@@ -130,13 +146,7 @@ namespace MasterThesisHelper.parser
                 {
                     if (!String.IsNullOrWhiteSpace(buffer))
                     {
-                        LatexTextBlock latexTextBlock = new LatexTextBlock();
-                        latexTextBlock.Text = buffer;
-                        latexTextBlock.FilePath = parent.FilePath;
-                        latexTextBlock.Line = i;
-                        latexTextBlock.Section = (parent.Section);
-                        parent.AddChild(latexTextBlock);
-                        Trace.WriteLine(latexTextBlock);
+                        HandleNonEmptyBuffer(buffer, parent, i);
                         buffer = "";
                     }
                     LatexSectionBlock block = new LatexSectionBlock();
@@ -189,13 +199,7 @@ namespace MasterThesisHelper.parser
             }
             if (!String.IsNullOrWhiteSpace(buffer))
             {
-                LatexTextBlock latexTextBlock = new LatexTextBlock();
-                latexTextBlock.Text = buffer;
-                latexTextBlock.FilePath = parent.FilePath;
-                latexTextBlock.Line = i;
-                latexTextBlock.Section = (parent.Section);
-                parent.AddChild(latexTextBlock);
-                Trace.WriteLine(latexTextBlock);
+                HandleNonEmptyBuffer(buffer, parent, i);
                 buffer = "";
             }
             return parent;

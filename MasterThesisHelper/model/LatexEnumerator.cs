@@ -11,12 +11,11 @@ namespace MasterThesisHelper.model
     public class LatexEnumerator : IEnumerator<string>
     {
         private LatexBlock current;
-        private List<LatexBlock> blocks;
-        private int index = -1;
-        
-        public string Current => blocks[index].ToString();
-
-        object IEnumerator.Current => blocks[index];
+            private readonly LatexBlock  head;
+        private Stack<int> indexStack = new Stack<int>();
+        public string Current => current.ToString();
+        private bool hasGoneUp = false;
+        object IEnumerator.Current =>current;
 
         public void Dispose()
         {
@@ -24,29 +23,47 @@ namespace MasterThesisHelper.model
         }
         public LatexEnumerator(LatexBlock head)
         {
-            Queue<LatexBlock> blocks = new();
-            this.blocks = new();
-            blocks.Enqueue(head);
-            while(blocks.Any())
-            {
-                var block = blocks.Dequeue();
-                this.blocks.Add(block);
-                foreach(var c in block.Children)
-                {
-                    blocks.Enqueue(c);
-                }
-            }
+            this.head = head;
 
         }
         public bool MoveNext()
         {
-            index++;
-            return index < blocks.Count;
+          if(current==null)
+            {
+                current = head;
+                indexStack.Push(0);
+                return true;
+            }
+            else
+            {
+
+                int index=indexStack.Pop();
+                if(index<current.Children.Count)
+                {
+                    var next = current.Children[index];
+           
+                    indexStack.Push(index + 1);
+                    if (!hasGoneUp)
+                    {
+                        indexStack.Push(0);
+                        current = next;
+
+                    }
+                    hasGoneUp = false;
+                    return true;
+                }
+                else
+                {
+                    current = current.Parent;
+                    hasGoneUp = true;
+                    return current!=null &&  MoveNext();
+                }
+            }
         }
 
         public void Reset()
         {
-            index = -1;
+            current = null;
         }
     }
 }

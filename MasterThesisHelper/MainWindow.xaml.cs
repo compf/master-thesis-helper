@@ -1,4 +1,5 @@
-﻿using MasterThesisHelper.parser;
+﻿using MasterThesisHelper.model;
+using MasterThesisHelper.parser;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
@@ -18,19 +19,20 @@ namespace MasterThesisHelper
     /// </summary>
     public partial class MainWindow : Window
     {
+        private LatexBlock block;
         public MainWindow()
         {
-            LatexParser parser=new LatexParser("E:\\master-thesis-report\\masterthesis\\main.tex");
-           var result= parser.Parse();
+            LatexParser parser=new LatexParser(Properties.Settings.Default.ThesisPath);
+               var result= parser.Parse();
+            block = result;
+
             ToString();
            var options = new JsonSerializerOptions
             {
                 WriteIndented = true
             };
             String text=JsonSerializer.Serialize(result,options);
-            System.IO.File.WriteAllText("E:\\output.json", text);
-            List<LatexBlock> items = new();
-            items.Add(result);
+
             InitializeComponent();
             tvProject.ItemsSource = result;
             tvProject.SelectedItemChanged += (sender, e) =>
@@ -39,6 +41,27 @@ namespace MasterThesisHelper
                 textEditor.Load(val.FilePath);
                 textEditor.ScrollTo(val.Line,0);
             };
+
+            
+        }
+        IChatModel chat = new StubChatModel();
+        private void btSend_Click(object sender, RoutedEventArgs e)
+        {
+           string output= chat.SendAndWait(tbInstruction.Text, block.GetChecked());
+
+            TextBox tbPrompt = new();
+            tbPrompt.Text = tbInstruction.Text;
+            tbPrompt.HorizontalAlignment = HorizontalAlignment.Right;
+            tbPrompt.Background = Brushes.LightBlue;
+            tbPrompt.IsReadOnly = true;
+            stackChat.Children.Add(tbPrompt);
+
+            TextBox tbOutput = new TextBox();
+            tbOutput.MaxLines = 10;
+            tbOutput.TextWrapping = TextWrapping.Wrap;
+            tbOutput.IsReadOnly = true;
+            tbOutput.Text = output;
+            stackChat.Children.Add(tbOutput);
         }
     }
 }

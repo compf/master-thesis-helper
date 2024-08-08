@@ -8,89 +8,11 @@ using System.IO;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Collections;
+using MasterThesisHelper.model;
+
 namespace MasterThesisHelper.parser
 {
-    [JsonDerivedType(typeof(LatexTextBlock))]
-    [JsonDerivedType(typeof(LatexSectionBlock))]
-
-    public class LatexBlock :IEnumerable<LatexBlock>
-    {
-        public string Section { get; set; }
-
-        public List<LatexBlock> Children { get; set; } = new();
-        public string FilePath { get; set; }
-
-
-        public IEnumerator<LatexBlock> GetEnumerator()
-        {
-            return Children.GetEnumerator();
-        }
-         IEnumerator IEnumerable.GetEnumerator()
-        {
-            return Children.GetEnumerator();
-        }
-        public string GetLevelDownSection()
-        {
-            return Section + ".1";
-        }
-        public string IncrementSectionAt(int at)
-        {
-            int[] splitted = Section.Split(".").Select((b) => int.Parse(b)).ToArray();
-            splitted[at]++;
-            for (int i = at + 1; i < splitted.Length; i++)
-            {
-                splitted[i] = 1;
-            }
-            return String.Join(".", splitted);
-        }
-        public int Level { get; set; }
-        public int Line { get; set; }
-
-        [JsonIgnore]
-        public LatexBlock Parent { get; set; }
-        public void AddChild(LatexBlock child)
-        {
-            Children.Add(child);
-            child.Parent = this;
-        }
-        protected string GetPadding()
-        {
-            if (Level < 0)
-            {
-                return "";
-            }
-            else
-            {
-                return new string('\t', Level);
-            }
-        }
-        public override string ToString()
-        {
-            string all = String.Join('\n', Children);
-            return all.Substring(0, Math.Min(20, all.Length));
-        }
-
-    }
-
-    public class LatexTextBlock : LatexBlock
-    {
-        [JsonPropertyOrder(0)]
-        public string Text { get; set; }
-        public override string ToString()
-        {
-            return GetPadding() + Text.Substring(0, Math.Min(20, Text.Length));
-        }
-    }
-    public class LatexSectionBlock : LatexBlock
-    {
-        [JsonPropertyOrder(0)]
-        public string Title { get; set; }
-        public override string ToString()
-        {
-            return GetPadding() + Title;
-        }
-    }
-
+   
     public class LatexParser
     {
         private string mainPath;
